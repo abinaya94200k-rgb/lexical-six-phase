@@ -1,0 +1,40 @@
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+
+    def eat(self, token_type):
+        if self.tokens[self.pos][0] == token_type:
+            self.pos += 1
+        else:
+            raise Exception("Syntax Error")
+
+    def factor(self):
+        token = self.tokens[self.pos]
+        if token[0] == 'NUMBER':
+            self.eat('NUMBER')
+            return ('NUMBER', token[1])
+        elif token[0] == 'ID':
+            self.eat('ID')
+            return ('ID', token[1])
+        elif token[0] == 'LPAREN':
+            self.eat('LPAREN')
+            node = self.expr()
+            self.eat('RPAREN')
+            return node
+
+    def term(self):
+        node = self.factor()
+        while self.pos < len(self.tokens) and self.tokens[self.pos][0] in ('MUL', 'DIV'):
+            token = self.tokens[self.pos]
+            self.eat(token[0])
+            node = (token[0], node, self.factor())
+        return node
+
+    def expr(self):
+        node = self.term()
+        while self.pos < len(self.tokens) and self.tokens[self.pos][0] in ('PLUS', 'MINUS'):
+            token = self.tokens[self.pos]
+            self.eat(token[0])
+            node = (token[0], node, self.term())
+        return node
