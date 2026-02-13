@@ -1,0 +1,14 @@
+def generate_ir(ast):
+    global temp_count
+
+    if ast[0] in ('NUMBER', 'ID'):
+        return str(ast[1])
+
+    left = generate_ir(ast[1])
+    right = generate_ir(ast[2])
+
+    temp = f"t{temp_count}"
+    temp_count += 1
+
+    print(f"{temp} = {left} {ast[0]} {right}")
+    return temp
