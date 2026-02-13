@@ -1,0 +1,19 @@
+def generate_assembly(ast):
+    if ast[0] == 'NUMBER':
+        print(f"MOV R0, #{ast[1]}")
+    elif ast[0] == 'ID':
+        print(f"MOV R0, {ast[1]}")
+    else:
+        generate_assembly(ast[1])
+        print("PUSH R0")
+        generate_assembly(ast[2])
+        print("POP R1")
+
+        if ast[0] == 'PLUS':
+            print("ADD R0, R1, R0")
+        elif ast[0] == 'MINUS':
+            print("SUB R0, R1, R0")
+        elif ast[0] == 'MUL':
+            print("MUL R0, R1, R0")
+        elif ast[0] == 'DIV':
+            print("DIV R0, R1, R0")
