@@ -1,0 +1,34 @@
+def lexical_analysis(code):
+    token_specification = [
+        ('NUMBER',   r'\d+'),
+        ('ID',       r'[A-Za-z]+'),
+        ('ASSIGN',   r'='),
+        ('PLUS',     r'\+'),
+        ('MINUS',    r'-'),
+        ('MUL',      r'\*'),
+        ('DIV',      r'/'),
+        ('LPAREN',   r'\('),
+        ('RPAREN',   r'\)'),
+        ('SKIP',     r'[ \t]+'),
+        ('MISMATCH', r'.'),
+    ]
+
+    tok_regex = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
+    tokens = []
+
+    for mo in re.finditer(tok_regex, code):
+        kind = mo.lastgroup
+        value = mo.group()
+
+        if kind == 'NUMBER':
+            tokens.append(('NUMBER', int(value)))
+        elif kind == 'ID':
+            tokens.append(('ID', value))
+        elif kind in ('PLUS', 'MINUS', 'MUL', 'DIV', 'ASSIGN', 'LPAREN', 'RPAREN'):
+            tokens.append((kind, value))
+        elif kind == 'SKIP':
+            continue
+        else:
+            raise RuntimeError(f'Unexpected token: {value}')
+
+    return tokens
