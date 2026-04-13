@@ -1,32 +1,89 @@
-from typing import Dict, Optional
+# DAG Representation for Basic Block Optimization
 
-class DAGNode:
-    def __init__(self, value: str, left=None, right=None):
-        self.value = value
-        self.left = left
-        self.right = right
+class Node:
+    def __init__(self, op, left=None, right=None, value=None):
+        self.op = op          # operator
+        self.left = left      # left child
+        self.right = right    # right child
+        self.value = value    # variable name / constant
+        self.labels = []      # variables representing this node
 
-class DAGBuilder:
+
+class DAG:
     def __init__(self):
-        self.node_map: Dict[str, DAGNode] = {}
+        self.nodes = []
 
-    def add_node(self, op: str, left_val: str, right_val: Optional[str] = None) -> DAGNode:
-        # Search for existing common subexpression
-        signature = f"{op}_{left_val}_{right_val}"
-        if signature in self.node_map:
-            return self.node_map[signature]
+    # Find existing node
+    def find_node(self, op, left, right):
+        for node in self.nodes:
+            if node.op == op and node.left == left and node.right == right:
+                return node
+        return None
 
-        left_node = self.node_map.get(left_val, DAGNode(left_val))
-        right_node = self.node_map.get(right_val, DAGNode(right_val)) if right_val else None
-        
-        new_node = DAGNode(op, left_node, right_node)
-        self.node_map[signature] = new_node
-        self.node_map[new_node.value] = new_node # Simplified reference
+    # Find leaf node
+    def get_leaf(self, value):
+        for node in self.nodes:
+            if node.value == value:
+                return node
+
+        new_node = Node(None, value=value)
+        new_node.labels.append(value)
+        self.nodes.append(new_node)
         return new_node
 
-if __name__ == '__main__':
-    dag = DAGBuilder()
-    # a + a * (b - c) + (b - c) * d
-    n1 = dag.add_node('-', 'b', 'c') # common
-    n2 = dag.add_node('*', 'a', n1.value)
-    print("DAG Nodes tracked for reuse:", len(dag.node_map))
+    # Build DAG
+    def build(self, statements):
+        for stmt in statements:
+            left, right = stmt.split('=')
+            left = left.strip()
+            right = right.strip()
+
+            parts = right.split()
+
+            # Case: binary operation
+            if len(parts) == 3:
+                op1, op, op2 = parts
+
+                left_node = self.get_leaf(op1)
+                right_node = self.get_leaf(op2)
+
+                existing = self.find_node(op, left_node, right_node)
+
+                if existing:
+                    existing.labels.append(left)
+                else:
+                    new_node = Node(op, left_node, right_node)
+                    new_node.labels.append(left)
+                    self.nodes.append(new_node)
+
+            # Case: assignment
+            else:
+                node = self.get_leaf(parts[0])
+                node.labels.append(left)
+
+    # Display DAG
+    def display(self):
+        print("\n--- DAG Nodes ---")
+        for i, node in enumerate(self.nodes):
+            if node.op:
+                print(f"Node {i}: ({node.op}) -> "
+                      f"{node.left.value if node.left.value else node.left.labels}, "
+                      f"{node.right.value if node.right.value else node.right.labels} "
+                      f"| Labels: {node.labels}")
+            else:
+                print(f"Node {i}: Value = {node.value} | Labels: {node.labels}")
+
+
+# Main Program
+if __name__ == "__main__":
+    # Example basic block
+    statements = [
+        "t1 = a + b",
+        "t2 = a + b",
+        "t3 = t1 + c",
+        "t4 = t2 + c"
+    ]
+
+    dag = DAG()
+    dag.build(statements)
+    dag.display()
