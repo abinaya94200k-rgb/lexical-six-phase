@@ -1,38 +1,53 @@
-from typing import Dict, Any
+# Storage Allocation in Compiler Design
+# Demonstrates memory allocation for variables
 
-class AllocationSystem:
-    def __init__(self, memory_size: int = 1024):
-        self.memory = [0] * memory_size
-        self.stack_ptr = memory_size - 1
-        self.heap_ptr = 0
-        self.static_ptr = 0
-        self.symbol_table: Dict[str, int] = {}
+class StorageAllocation:
+    def __init__(self):
+        self.symbol_table = {}
+        self.memory_address = 1000   # starting address
 
-    def alloc_static(self, name: str, size: int) -> int:
-        addr = self.static_ptr
-        self.static_ptr += size
-        self.symbol_table[name] = addr
-        return addr
+    # Allocate memory for variable
+    def allocate(self, var_name, var_type):
+        size = self.get_size(var_type)
 
-    def alloc_stack(self, size: int) -> int:
-        self.stack_ptr -= size
-        if self.stack_ptr <= self.heap_ptr:
-            raise MemoryError("Stack Overflow")
-        return self.stack_ptr
+        if var_name not in self.symbol_table:
+            self.symbol_table[var_name] = {
+                "type": var_type,
+                "address": self.memory_address,
+                "size": size
+            }
+            self.memory_address += size
+        else:
+            print(f"Variable '{var_name}' already declared!")
 
-    def pop_stack(self, size: int):
-        self.stack_ptr += size
+    # Return size based on type
+    def get_size(self, var_type):
+        sizes = {
+            "int": 4,
+            "float": 8,
+            "char": 1,
+            "double": 8
+        }
+        return sizes.get(var_type, 4)  # default size = 4
 
-    def alloc_heap(self, size: int) -> int:
-        # Simplistic bump-pointer heap allocation
-        addr = self.heap_ptr
-        self.heap_ptr += size
-        if self.heap_ptr >= self.stack_ptr:
-            raise MemoryError("Out of Heap Memory")
-        return addr
+    # Display Symbol Table
+    def display(self):
+        print("\n--- Symbol Table (Storage Allocation) ---")
+        print(f"{'Variable':<10} {'Type':<10} {'Address':<10} {'Size':<5}")
+        for var, details in self.symbol_table.items():
+            print(f"{var:<10} {details['type']:<10} {details['address']:<10} {details['size']:<5}")
 
-if __name__ == '__main__':
-    mem = AllocationSystem()
-    print("Static var at:", mem.alloc_static('global_x', 4))
-    print("Heap var at:", mem.alloc_heap(16))
-    print("Stack frame at:", mem.alloc_stack(32))
+
+# Main Program
+if __name__ == "__main__":
+    sa = StorageAllocation()
+
+    print("Storage Allocation Program\n")
+
+    # Example variables
+    sa.allocate("a", "int")
+    sa.allocate("b", "float")
+    sa.allocate("c", "char")
+    sa.allocate("d", "double")
+
+    sa.display()
