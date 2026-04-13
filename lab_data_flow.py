@@ -1,37 +1,76 @@
-from typing import Set, Dict, List
+# Data Flow Analysis - Live Variable Analysis
 
-class BasicBlock:
-    def __init__(self, bid: int, gen: Set[int], kill: Set[int], predecessors: List['BasicBlock']):
-        self.id = bid
-        self.gen = gen
-        self.kill = kill
-        self.preds = predecessors
-        self.in_set: Set[int] = set()
-        self.out_set: Set[int] = set(gen)
+class DataFlow:
+    def __init__(self, statements):
+        self.statements = statements
+        self.n = len(statements)
+        self.IN = [set() for _ in range(self.n)]
+        self.OUT = [set() for _ in range(self.n)]
+        self.USE = []
+        self.DEF = []
 
-class ReachingDefinitions:
-    def __init__(self, blocks: List[BasicBlock]):
-        self.blocks = blocks
+        self.compute_use_def()
 
+    # Compute USE and DEF sets
+    def compute_use_def(self):
+        for stmt in self.statements:
+            parts = stmt.split('=')
+            left = parts[0].strip()
+            right = parts[1].strip()
+
+            def_set = {left}
+            use_set = set()
+
+            for ch in right:
+                if ch.isalpha():
+                    use_set.add(ch)
+
+            self.DEF.append(def_set)
+            self.USE.append(use_set)
+
+    # Perform Live Variable Analysis
     def analyze(self):
         changed = True
+
         while changed:
             changed = False
-            for block in self.blocks:
-                new_in = set()
-                for p in block.preds:
-                    new_in.update(p.out_set)
-                
-                block.in_set = new_in
-                new_out = block.gen.union(block.in_set - block.kill)
-                
-                if new_out != block.out_set:
-                    block.out_set = new_out
+
+            for i in range(self.n - 1, -1, -1):
+                old_in = self.IN[i].copy()
+                old_out = self.OUT[i].copy()
+
+                # OUT[i] = IN[i+1]
+                if i < self.n - 1:
+                    self.OUT[i] = self.IN[i + 1]
+
+                # IN[i] = USE[i] ∪ (OUT[i] - DEF[i])
+                self.IN[i] = self.USE[i].union(self.OUT[i] - self.DEF[i])
+
+                if old_in != self.IN[i] or old_out != self.OUT[i]:
                     changed = True
 
-if __name__ == '__main__':
-    b1 = BasicBlock(1, {1, 2}, {3}, [])
-    b2 = BasicBlock(2, {3}, {1}, [b1])
-    rd = ReachingDefinitions([b1, b2])
-    rd.analyze()
-    print("Block 2 IN:", rd.blocks[1].in_set)
+    # Display results
+    def display(self):
+        print("\n--- Data Flow Analysis (Live Variables) ---")
+        print(f"{'Stmt':<15} {'USE':<10} {'DEF':<10} {'IN':<15} {'OUT':<15}")
+
+        for i in range(self.n):
+            print(f"{self.statements[i]:<15} "
+                  f"{str(self.USE[i]):<10} "
+                  f"{str(self.DEF[i]):<10} "
+                  f"{str(self.IN[i]):<15} "
+                  f"{str(self.OUT[i]):<15}")
+
+
+# Main Program
+if __name__ == "__main__":
+    # Example statements
+    statements = [
+        "a = b + c",
+        "b = a - d",
+        "c = b + e"
+    ]
+
+    df = DataFlow(statements)
+    df.analyze()
+    df.display()
