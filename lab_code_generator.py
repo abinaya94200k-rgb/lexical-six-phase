@@ -1,34 +1,51 @@
-from typing import List
-from lab11_three_address_code import TAC
+# Simple Code Generator from Three Address Code (TAC)
 
-class SimpleCodeGenerator:
-    def __init__(self):
-        self.registers = {'R0': None, 'R1': None}
+class CodeGenerator:
+    def __init__(self, tac):
+        self.tac = tac
 
-    def get_reg(self, var: str) -> str:
-        for reg, val in self.registers.items():
-            if val == var: return reg
-        for reg, val in self.registers.items():
-            if val is None:
-                self.registers[reg] = var
-                return reg
-        return 'R0' # Fallback primitive register spill
+    # Generate target code
+    def generate(self):
+        print("\n--- Generated Target Code ---")
 
-    def generate(self, tacs: List[TAC]):
-        for tac in tacs:
-            reg1 = self.get_reg(tac.arg1)
-            print(f"MOV {tac.arg1}, {reg1}")
-            if tac.arg2:
-                reg2 = self.get_reg(tac.arg2)
-                if self.registers[reg2] != tac.arg2:
-                    print(f"MOV {tac.arg2}, {reg2}")
-                
-                op_map = {'+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV'}
-                print(f"{op_map[tac.op]} {reg2}, {reg1}")
-            self.registers[reg1] = tac.result
-            print(f"MOV {reg1}, {tac.result}")
+        for stmt in self.tac:
+            parts = stmt.split('=')
+            left = parts[0].strip()
+            right = parts[1].strip()
 
-if __name__ == '__main__':
-    tacs = [TAC('*', 'b', 'c', 't1'), TAC('+', 'a', 't1', 't2')]
-    cg = SimpleCodeGenerator()
-    cg.generate(tacs)
+            tokens = right.split()
+
+            # Case 1: Binary operation
+            if len(tokens) == 3:
+                op1, op, op2 = tokens
+
+                print(f"MOV R0, {op1}")
+
+                if op == '+':
+                    print(f"ADD R0, {op2}")
+                elif op == '-':
+                    print(f"SUB R0, {op2}")
+                elif op == '*':
+                    print(f"MUL R0, {op2}")
+                elif op == '/':
+                    print(f"DIV R0, {op2}")
+
+                print(f"MOV {left}, R0")
+
+            # Case 2: Simple assignment
+            else:
+                print(f"MOV R0, {tokens[0]}")
+                print(f"MOV {left}, R0")
+
+
+# Main Program
+if __name__ == "__main__":
+    # Example TAC
+    tac = [
+        "t1 = a + b",
+        "t2 = t1 * c",
+        "t3 = t2 - d"
+    ]
+
+    cg = CodeGenerator(tac)
+    cg.generate()
